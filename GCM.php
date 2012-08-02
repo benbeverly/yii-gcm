@@ -68,7 +68,7 @@ class GCM extends CApplicationComponent {
 			return;
 		}
 		
-		$headers = array("Content-Type" => "application/json", "Authorization" => "key=" . $this->apiKey);
+		$headers = array("Content-Type : application/json", "Authorization : key=" . $this->apiKey);
 		$fullData = array(
 				'data' => $data,
 				'registration_ids' => $devices
@@ -78,7 +78,7 @@ class GCM extends CApplicationComponent {
 		
 		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 		// set the send point url
-		curl_setopt($ch, CURLOPT_URL, GCM::GCM_SEND_ENDPOINT);
+		curl_setopt($ch, CURLOPT_URL, GCM::$GCM_SEND_ENDPOINT);
 		curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -86,7 +86,7 @@ class GCM extends CApplicationComponent {
 		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fullData));
 		
 		$response = curl_exec($ch);
-		curl_close($ch);
+		curl_close($ch);		
 		
 		if(!$response > 0){
 		    if($retry > 0) {		    	
@@ -96,7 +96,6 @@ class GCM extends CApplicationComponent {
 		else{
 		    $json_return = json_decode($response);
 		}
-	}
-	
-	
+	}	
 }
+
