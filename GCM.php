@@ -3,52 +3,100 @@
 class GCM extends CApplicationComponent {
 	
 	/**
+	 * CONSTANTS
+	 */
+	public static $ERROR_DEVICE_QUOTA_EXCEEDED = "DeviceQuotaExceeded";
+	public static $ERROR_INTERNAL_SERVER_ERROR = "InternalServerError";
+	public static $INVALID_REGISTRATION = "InvalidRegistration";
+	public static $INVALID_TTL = "InvalidTtl";
+	public static $MESSAGE_TOO_BIG = "MessageTooBig";
+	public static $MISMATCH_SENDER_ID = "MismatchSenderId";
+	public static $MISSING_COLLAPSE_KEY = "MissingCollapseKey";
+	public static $MISSING_REGISTRATION = "MissingRegistration";
+	public static $NOT_REGISTERED = "NotRegistered";
+	public static $QUOTA_EXCEEDED = "QuotaExceeded";
+	public static $UNAVAILABLE = "Unavailable";
+	public static $GCM_SEND_ENDPOINT = "https://android.googleapis.com/gcm/send";
+	public static $JSON_CANONICAL_IDS = "canonical_ids";
+	public static $JSON_ERROR = "error";
+	public static $JSON_FAILURE = "failure";
+	public static $JSON_MESSAGE_ID = "message_id";
+	public static $JSON_MULTICAST_ID = "multicast_id";
+	public static $JSON_PAYLOAD = "data";
+	public static $JSON_REGISTRATION_IDS = "registration_ids";
+	public static $JSON_RESULTS = "results";
+	public static $JSON_SUCCESS = "success";
+	public static $PARAM_COLLAPSE_KEY = "collapse_key";
+	public static $PARAM_DELAY_WHILE_IDLE = "delay_while_idle";
+	public static $PARAM_PAYLOAD_PREFIX = "data.";
+	public static $PARAM_REGISTRATION_ID = "registration_id";
+	public static $PARAM_TIME_TO_LIVE = "time_to_live";
+	public static $TOKEN_CANONICAL_REG_ID = "registration_id";
+	public static $TOKEN_ERROR = "Error";
+	public static $TOKEN_MESSAGE_ID = "id";
+	
+	/**
 	 * Unique Google API key. Generated in API console 
 	 * @var string
 	 */
-	public $SApi;
+	public $apiKey;
+	
 	
 	/**
-	 * Sender ID. Unique project ID found in Google API console
-	 * @var string
+	 * Initializes the application component.
+	 * This method is required by {@link IApplicationComponent} and is invoked by application.
 	 */
-	public $senderID;
+	public function init()
+	{
+		if(empty($this->apiKey))
+			throw new CException('No API key set');
+	
+		parent::init();
+	}
 	
 	/**
-	 * 
+	 * Sends the message.
+	 * @param array $devices
+	 * @param array $data
+	 * @param string $collapseKey
+	 * @param int $retry
+	 * @param int $timeToLive
+	 * @param bool $delayIdle
 	 */
-	private $_ERROR_DEVICE_QUOTA_EXCEEDED = "DeviceQuotaExceeded";
-	private $_ERROR_INTERNAL_SERVER_ERROR = "InternalServerError";
-	private $_ERROR_INVALID_REGISTRATION = "InvalidRegistration";
-	private $_ERROR_INVALID_TTL = "InvalidTtl";
-	private $_ERROR_MESSAGE_TOO_BIG = "MessageTooBig";
-	private $_ERROR_MISMATCH_SENDER_ID = "MismatchSenderId";
-	private $_ERROR_MISSING_COLLAPSE_KEY = "MissingCollapseKey";
-	private $_ERROR_MISSING_REGISTRATION = "MissingRegistration";
-	private $_ERROR_NOT_REGISTERED = "NotRegistered";
-	private $_ERROR_QUOTA_EXCEEDED = "QuotaExceeded";
-	private $_ERROR_UNAVAILABLE = "Unavailable";
-	private $_GCM_SEND_ENDPOINT = "https://android.googleapis.com/gcm/send";
-	private $_JSON_CANONICAL_IDS = "canonical_ids";
-	private $_JSON_ERROR = "error";
-	private $_JSON_FAILURE = "failure";
-	private $_JSON_MESSAGE_ID = "message_id";
-	private $_JSON_MULTICAST_ID = "multicast_id";
-	private $_JSON_PAYLOAD = "data";
-	private $_JSON_REGISTRATION_IDS = "registration_ids";
-	private $_JSON_RESULTS = "results";
-	private $_JSON_SUCCESS = "success";
-	private $_PARAM_COLLAPSE_KEY = "collapse_key";
-	private $_PARAM_DELAY_WHILE_IDLE = "delay_while_idle";
-	private $_PARAM_PAYLOAD_PREFIX = "data.";
-	private $_PARAM_REGISTRATION_ID = "registration_id";
-	private $_PARAM_TIME_TO_LIVE = "time_to_live";
-	private $_TOKEN_CANONICAL_REG_ID = "registration_id";
-	private $_TOKEN_ERROR = "Error";
-	private $_TOKEN_MESSAGE_ID = "id";
+	public function send($devices, $data, $collapseKey = "", $timeToLive=0, $delayIdle = false, $retry=0) {
+		if($devices == null || $data == null) {
+			return;
+		}
+		
+		$headers = array("Content-Type" => "application/json", "Authorization" => "key=" . $this->apiKey);
+		$fullData = array(
+				'data' => $data,
+				'registration_ids' => $devices
+		);
+		
+		$ch = curl_init();
+		
+		curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+		// set the send point url
+		curl_setopt($ch, CURLOPT_URL, GCM::GCM_SEND_ENDPOINT);
+		curl_setopt ($ch, CURLOPT_SSL_VERIFYHOST, 0);
+		curl_setopt ($ch, CURLOPT_SSL_VERIFYPEER, 0);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		// endcode the data as JSON
+		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($fullData));
+		
+		$response = curl_exec($ch);
+		curl_close($ch);
+		
+		if(!$response > 0){
+		    if($retry > 0) {		    	
+		    	$this->send($devices, $data, $collapseKey, $timeToLive, $delayIdle, $retry -1);
+		    }
+		}
+		else{
+		    $json_return = json_decode($response);
+		}
+	}
 	
-	/**
-	 * 
-	 * 
-	 */
+	
 }
